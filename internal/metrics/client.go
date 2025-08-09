@@ -5,8 +5,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// ClientLabelNames defines the labels attached to wireless client metrics.
-var ClientLabelNames = append(SiteLabelNames,
+// StreamedClientLabelNames defines the labels attached to streamed wireless client metrics.
+var StreamedClientLabelNames = append(SiteLabelNames,
+	"device_name",
+	"device_mac",
 	"client_mac",
 	"client_username",
 	"client_hostname",
@@ -14,15 +16,16 @@ var ClientLabelNames = append(SiteLabelNames,
 	"client_manufacture",
 	"client_family",
 	"client_model",
-	"device_id",
 	"proto",
 	"radio",
 	"ssid",
 )
 
-// ClientLabelValues generates label values for wireless client metrics.
-func ClientLabelValues(s mistclient.Site, c mistclient.Client) []string {
+// StreamedClientLabelValues generates label values for streamed wireless client metrics.
+func StreamedClientLabelValues(s mistclient.Site, deviceName string, c mistclient.StreamedClientStat) []string {
 	return append(SiteLabelValues(s),
+		deviceName,
+		c.APMac,
 		c.Mac,
 		c.Username,
 		c.Hostname,
@@ -30,7 +33,6 @@ func ClientLabelValues(s mistclient.Site, c mistclient.Client) []string {
 		c.Manufacture,
 		c.Family,
 		c.Model,
-		c.APID,
 		c.Proto.String(),
 		c.Band.String(),
 		c.SSID,
@@ -71,7 +73,7 @@ func newClientMetrics(reg *prometheus.Registry) *ClientMetrics {
 				Subsystem: "client",
 				Name:      "channel",
 				Help:      "The channel the client is connected on.",
-			}, ClientLabelNames,
+			}, StreamedClientLabelNames,
 		),
 		dualBandCapable: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -79,7 +81,7 @@ func newClientMetrics(reg *prometheus.Registry) *ClientMetrics {
 				Subsystem: "client",
 				Name:      "dual_band_capable",
 				Help:      "Whether the client is dual-band capable (1 for true, 0 for false).",
-			}, ClientLabelNames,
+			}, StreamedClientLabelNames,
 		),
 		idleSeconds: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -87,7 +89,7 @@ func newClientMetrics(reg *prometheus.Registry) *ClientMetrics {
 				Subsystem: "client",
 				Name:      "idle_seconds",
 				Help:      "Time in seconds since the client was last active.",
-			}, ClientLabelNames,
+			}, StreamedClientLabelNames,
 		),
 		isGuest: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -95,7 +97,7 @@ func newClientMetrics(reg *prometheus.Registry) *ClientMetrics {
 				Subsystem: "client",
 				Name:      "is_guest_status",
 				Help:      "Whether the client is a guest user (1 for true, 0 for false).",
-			}, ClientLabelNames,
+			}, StreamedClientLabelNames,
 		),
 		lastSeenTimestamp: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -103,7 +105,7 @@ func newClientMetrics(reg *prometheus.Registry) *ClientMetrics {
 				Subsystem: "client",
 				Name:      "last_seen_timestamp_seconds",
 				Help:      "The last time the client was seen, as a Unix timestamp.",
-			}, ClientLabelNames,
+			}, StreamedClientLabelNames,
 		),
 		locatingAps: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -111,7 +113,7 @@ func newClientMetrics(reg *prometheus.Registry) *ClientMetrics {
 				Subsystem: "client",
 				Name:      "locating_aps_total",
 				Help:      "The number of APs that can hear the client.",
-			}, ClientLabelNames,
+			}, StreamedClientLabelNames,
 		),
 		powerSavingModeActive: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -119,7 +121,7 @@ func newClientMetrics(reg *prometheus.Registry) *ClientMetrics {
 				Subsystem: "client",
 				Name:      "power_saving_mode_active",
 				Help:      "Whether the client is in power-saving mode (1 for true, 0 for false).",
-			}, ClientLabelNames,
+			}, StreamedClientLabelNames,
 		),
 		rssiDbm: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -127,7 +129,7 @@ func newClientMetrics(reg *prometheus.Registry) *ClientMetrics {
 				Subsystem: "client",
 				Name:      "rssi_dbm",
 				Help:      "The client's Received Signal Strength Indicator in dBm.",
-			}, ClientLabelNames,
+			}, StreamedClientLabelNames,
 		),
 		receiveBps: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -135,7 +137,7 @@ func newClientMetrics(reg *prometheus.Registry) *ClientMetrics {
 				Subsystem: "client",
 				Name:      "receive_bits_per_second",
 				Help:      "Bits per second received from the client.",
-			}, ClientLabelNames,
+			}, StreamedClientLabelNames,
 		),
 		receiveBytesTotal: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -143,7 +145,7 @@ func newClientMetrics(reg *prometheus.Registry) *ClientMetrics {
 				Subsystem: "client",
 				Name:      "receive_bytes_total",
 				Help:      "Total bytes received from the client.",
-			}, ClientLabelNames,
+			}, StreamedClientLabelNames,
 		),
 		receivePacketsTotal: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -151,7 +153,7 @@ func newClientMetrics(reg *prometheus.Registry) *ClientMetrics {
 				Subsystem: "client",
 				Name:      "receive_packets_total",
 				Help:      "Total packets received from the client.",
-			}, ClientLabelNames,
+			}, StreamedClientLabelNames,
 		),
 		receiveRateMbps: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -159,7 +161,7 @@ func newClientMetrics(reg *prometheus.Registry) *ClientMetrics {
 				Subsystem: "client",
 				Name:      "receive_rate_mbps",
 				Help:      "The receive data rate in Mbps.",
-			}, ClientLabelNames,
+			}, StreamedClientLabelNames,
 		),
 		receiveRetriesTotal: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -167,7 +169,7 @@ func newClientMetrics(reg *prometheus.Registry) *ClientMetrics {
 				Subsystem: "client",
 				Name:      "receive_retries_total",
 				Help:      "Total number of receive retries.",
-			}, ClientLabelNames,
+			}, StreamedClientLabelNames,
 		),
 		snrDb: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -175,7 +177,7 @@ func newClientMetrics(reg *prometheus.Registry) *ClientMetrics {
 				Subsystem: "client",
 				Name:      "snr_db",
 				Help:      "The client's Signal-to-Noise Ratio in dB.",
-			}, ClientLabelNames,
+			}, StreamedClientLabelNames,
 		),
 		transmitBps: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -183,7 +185,7 @@ func newClientMetrics(reg *prometheus.Registry) *ClientMetrics {
 				Subsystem: "client",
 				Name:      "transmit_bits_per_second",
 				Help:      "Bits per second transmitted to the client.",
-			}, ClientLabelNames,
+			}, StreamedClientLabelNames,
 		),
 		transmitBytesTotal: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -191,7 +193,7 @@ func newClientMetrics(reg *prometheus.Registry) *ClientMetrics {
 				Subsystem: "client",
 				Name:      "transmit_bytes_total",
 				Help:      "Total bytes transmitted to the client.",
-			}, ClientLabelNames,
+			}, StreamedClientLabelNames,
 		),
 		transmitPacketsTotal: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -199,7 +201,7 @@ func newClientMetrics(reg *prometheus.Registry) *ClientMetrics {
 				Subsystem: "client",
 				Name:      "transmit_packets_total",
 				Help:      "Total packets transmitted to the client.",
-			}, ClientLabelNames,
+			}, StreamedClientLabelNames,
 		),
 		transmitRateMbps: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -207,7 +209,7 @@ func newClientMetrics(reg *prometheus.Registry) *ClientMetrics {
 				Subsystem: "client",
 				Name:      "transmit_rate_mbps",
 				Help:      "The transmit data rate in Mbps.",
-			}, ClientLabelNames,
+			}, StreamedClientLabelNames,
 		),
 		transmitRetriesTotal: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -215,7 +217,7 @@ func newClientMetrics(reg *prometheus.Registry) *ClientMetrics {
 				Subsystem: "client",
 				Name:      "transmit_retries_total",
 				Help:      "Total number of transmit retries.",
-			}, ClientLabelNames,
+			}, StreamedClientLabelNames,
 		),
 		uptimeSeconds: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -223,7 +225,7 @@ func newClientMetrics(reg *prometheus.Registry) *ClientMetrics {
 				Subsystem: "client",
 				Name:      "uptime_seconds",
 				Help:      "The client's session uptime in seconds.",
-			}, ClientLabelNames,
+			}, StreamedClientLabelNames,
 		),
 	}
 
@@ -253,12 +255,12 @@ func newClientMetrics(reg *prometheus.Registry) *ClientMetrics {
 	return m
 }
 
-func handleSiteClientStat(site mistclient.Site, stat mistclient.Client) {
-	labels := ClientLabelValues(site, stat)
+func handleSiteClientStat(site mistclient.Site, deviceName string, stat mistclient.StreamedClientStat) {
+	labels := StreamedClientLabelValues(site, deviceName, stat)
 
 	clientMetrics.channel.WithLabelValues(labels...).Set(float64(stat.Channel))
 	clientMetrics.dualBandCapable.WithLabelValues(labels...).Set(boolToFloat64(stat.DualBand))
-	clientMetrics.idleSeconds.WithLabelValues(labels...).Set(float64(stat.Idletime))
+	clientMetrics.idleSeconds.WithLabelValues(labels...).Set(stat.Idletime.Seconds())
 	clientMetrics.isGuest.WithLabelValues(labels...).Set(boolToFloat64(stat.IsGuest))
 	clientMetrics.lastSeenTimestamp.WithLabelValues(labels...).Set(float64(stat.LastSeen.Unix()))
 	clientMetrics.locatingAps.WithLabelValues(labels...).Set(float64(stat.NumLocatingAPs))
@@ -275,5 +277,5 @@ func handleSiteClientStat(site mistclient.Site, stat mistclient.Client) {
 	clientMetrics.transmitPacketsTotal.WithLabelValues(labels...).Set(float64(stat.TxPackets))
 	clientMetrics.transmitRateMbps.WithLabelValues(labels...).Set(float64(stat.TxRate))
 	clientMetrics.transmitRetriesTotal.WithLabelValues(labels...).Set(float64(stat.TxRetries))
-	clientMetrics.uptimeSeconds.WithLabelValues(labels...).Set(float64(stat.Uptime))
+	clientMetrics.uptimeSeconds.WithLabelValues(labels...).Set(stat.Uptime.Seconds())
 }

@@ -130,6 +130,9 @@ mist_api:
 	if cfg.Collector.CollectTimeout != defaultCollectTimeout {
 		t.Errorf("expected default Collector.Timeout to be %v, got %v", defaultCollectTimeout, cfg.Collector.CollectTimeout)
 	}
+	if cfg.Collector.DeviceNameRefreshInterval != defaultDeviceNameRefresInterval {
+		t.Errorf("expected default Collector.DeviceNameRefreshInterval to be %v, got %v", defaultDeviceNameRefresInterval, cfg.Collector.DeviceNameRefreshInterval)
+	}
 	if cfg.Collector.SiteRefreshInterval != defaultSiteRefreshInterval {
 		t.Errorf("expected default Collector.SiteRefreshInterval to be %v, got %v", defaultSiteRefreshInterval, cfg.Collector.SiteRefreshInterval)
 	}

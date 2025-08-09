@@ -14,20 +14,22 @@ import (
 
 // MistMetrics is coordinates the collection of both streamed and on-demand metrics.
 type MistMetrics struct {
-	client              *mistclient.APIClient
-	orgID               string
-	filter              *filter.Filter
-	siteRefreshInterval time.Duration
-	ready               chan struct{}
-	reg                 *prometheus.Registry
-	logger              *slog.Logger
+	client                   *mistclient.APIClient
+	orgID                    string
+	filter                   *filter.Filter
+	siteRefreshInterval      time.Duration
+	deviceNameRefresInterval time.Duration
+	ready                    chan struct{}
+	reg                      *prometheus.Registry
+	logger                   *slog.Logger
 
-	mu    sync.RWMutex
-	sites map[string]*StreamCollector
+	mu          sync.RWMutex
+	sites       map[string]*StreamCollector
+	deviceNames map[string]string
 }
 
 // New creates a new MistMetrics.
-func New(client *mistclient.APIClient, orgID string, siteFilter *filter.Filter, siteRefreshInterval time.Duration, reg *prometheus.Registry, logger *slog.Logger) (*MistMetrics, error) {
+func New(client *mistclient.APIClient, orgID string, siteFilter *filter.Filter, siteRefreshInterval time.Duration, deviceNameRefresInterval time.Duration, reg *prometheus.Registry, logger *slog.Logger) (*MistMetrics, error) {
 	if client == nil {
 		return nil, fmt.Errorf("client cannot be nil")
 	}
@@ -36,22 +38,47 @@ func New(client *mistclient.APIClient, orgID string, siteFilter *filter.Filter, 
 	clientMetrics = newClientMetrics(reg)
 
 	return &MistMetrics{
-		client:              client,
-		orgID:               orgID,
-		filter:              siteFilter,
-		siteRefreshInterval: siteRefreshInterval,
-		ready:               make(chan struct{}),
-		reg:                 reg,
-		logger:              logger.With(slog.String("component", "metrics")),
-		sites:               make(map[string]*StreamCollector),
+		client:                   client,
+		orgID:                    orgID,
+		filter:                   siteFilter,
+		siteRefreshInterval:      siteRefreshInterval,
+		deviceNameRefresInterval: deviceNameRefresInterval,
+		ready:                    make(chan struct{}),
+		reg:                      reg,
+		logger:                   logger.With(slog.String("component", "metrics")),
+		sites:                    make(map[string]*StreamCollector),
+		deviceNames:              make(map[string]string),
 	}, nil
 }
 
 func (c *MistMetrics) Run(ctx context.Context) error {
 	wg := &sync.WaitGroup{}
+	if err := c.updateDeviceNameMap(); err != nil {
+		return fmt.Errorf("unable to initialize device name map: %w", err)
+	}
+
 	if err := c.manageSiteStreams(ctx, wg); err != nil {
 		return fmt.Errorf("unable to initialize site metric streams: %w", err)
 	}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		ticker := time.NewTicker(c.deviceNameRefresInterval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if err := c.updateDeviceNameMap(); err != nil {
+					c.logger.Error("unable to refresh org device names", "error", err)
+				}
+			}
+		}
+	}()
 
 	wg.Add(1)
 	go func() {
@@ -74,6 +101,22 @@ func (c *MistMetrics) Run(ctx context.Context) error {
 
 	close(c.ready)
 	wg.Wait()
+	return nil
+}
+
+func (c *MistMetrics) updateDeviceNameMap() error {
+	c.logger.Debug("running org device name map updater...")
+	defer c.logger.Debug("org device name map updater finished")
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	devices, err := c.client.ListOrgDevices(c.orgID)
+	if err != nil {
+		return fmt.Errorf("unable to fetch device list: %w", err)
+	}
+
+	c.deviceNames = devices
 	return nil
 }
 
@@ -101,7 +144,7 @@ func (c *MistMetrics) manageSiteStreams(ctx context.Context, wg *sync.WaitGroup)
 		activeSites[site.ID] = struct{}{}
 		streamer, ok := c.sites[site.ID]
 		if !ok {
-			streamer = newStreamCollector(c.client, site, c.logger)
+			streamer = newStreamCollector(c.client, site, c.deviceNames, c.logger)
 			c.sites[site.ID] = streamer
 		}
 
@@ -129,9 +172,10 @@ func (c *MistMetrics) Ready() <-chan struct{} {
 
 // StreamCollector coordinates the collection of metrics from a set of websocket streams.
 type StreamCollector struct {
-	client *mistclient.APIClient
-	site   mistclient.Site
-	logger *slog.Logger
+	client      *mistclient.APIClient
+	site        mistclient.Site
+	deviceNames map[string]string
+	logger      *slog.Logger
 
 	mu      sync.RWMutex
 	running bool
@@ -147,11 +191,12 @@ func (c *StreamCollector) stop() {
 	}
 }
 
-func newStreamCollector(client *mistclient.APIClient, site mistclient.Site, logger *slog.Logger) *StreamCollector {
+func newStreamCollector(client *mistclient.APIClient, site mistclient.Site, deviceNames map[string]string, logger *slog.Logger) *StreamCollector {
 	return &StreamCollector{
-		client: client,
-		site:   site,
-		logger: logger.With(slog.String("site", site.Name)),
+		client:      client,
+		site:        site,
+		deviceNames: deviceNames,
+		logger:      logger.With(slog.String("site", site.Name)),
 	}
 }
 
@@ -200,7 +245,13 @@ func (c *StreamCollector) run(ctx context.Context, wg *sync.WaitGroup) {
 		defer cancel()
 
 		for stat := range deviceStats {
-			handleSiteDeviceStat(c.site, stat)
+			// There's nothing we can do if there's no name so no need to
+			// check if the key exists - missing macs will get an empty label.
+			c.mu.RLock()
+			deviceName := c.deviceNames[stat.Mac]
+			c.mu.RUnlock()
+
+			handleSiteDeviceStat(c.site, deviceName, stat)
 		}
 	}()
 
@@ -210,7 +261,12 @@ func (c *StreamCollector) run(ctx context.Context, wg *sync.WaitGroup) {
 		defer cancel()
 
 		for stat := range clientStats {
-			handleSiteClientStat(c.site, stat)
+			// There's nothing we can do if there's no name so no need to
+			// check if the key exists - missing macs will get an empty label.
+			c.mu.RLock()
+			deviceName := c.deviceNames[stat.APMac]
+			c.mu.RUnlock()
+			handleSiteClientStat(c.site, deviceName, stat)
 		}
 	}()
 

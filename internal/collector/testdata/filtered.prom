@@ -9,37 +9,37 @@ mist_org_tickets{ticket_status="closed"} 10
 mist_org_tickets{ticket_status="open"} 5
 # HELP mist_site_lat Geographic latitude of the site.
 # TYPE mist_site_lat gauge
-mist_site_lat{country_code="US",site_id="test-site-id-1",site_name="Test Site 1",timezone="America/Los_Angeles"} 37.774898529052734
+mist_site_lat{country_code="US",site_name="Test Site 1",timezone="America/Los_Angeles"} 37.774898529052734
 # HELP mist_site_lng Geographic longitude of the site.
 # TYPE mist_site_lng gauge
-mist_site_lng{country_code="US",site_id="test-site-id-1",site_name="Test Site 1",timezone="America/Los_Angeles"} -122.41940307617188
+mist_site_lng{country_code="US",site_name="Test Site 1",timezone="America/Los_Angeles"} -122.41940307617188
 # HELP mist_site_modified_time The last time site was modified, as a Unix timestamp.
 # TYPE mist_site_modified_time gauge
-mist_site_modified_time{country_code="US",site_id="test-site-id-1",site_name="Test Site 1",timezone="America/Los_Angeles"} 1.6094592e+09
+mist_site_modified_time{country_code="US",site_name="Test Site 1",timezone="America/Los_Angeles"} 1.6094592e+09
 # HELP mist_site_num_ap Total number of APs configured for the site.
 # TYPE mist_site_num_ap gauge
-mist_site_num_ap{country_code="US",site_id="test-site-id-1",site_name="Test Site 1",timezone="America/Los_Angeles"} 10
+mist_site_num_ap{country_code="US",site_name="Test Site 1",timezone="America/Los_Angeles"} 10
 # HELP mist_site_num_ap_connected Number of APs currently online at the site.
 # TYPE mist_site_num_ap_connected gauge
-mist_site_num_ap_connected{country_code="US",site_id="test-site-id-1",site_name="Test Site 1",timezone="America/Los_Angeles"} 9
+mist_site_num_ap_connected{country_code="US",site_name="Test Site 1",timezone="America/Los_Angeles"} 9
 # HELP mist_site_num_clients Total number of clients currently connected to the site.
 # TYPE mist_site_num_clients gauge
-mist_site_num_clients{country_code="US",site_id="test-site-id-1",site_name="Test Site 1",timezone="America/Los_Angeles"} 100
+mist_site_num_clients{country_code="US",site_name="Test Site 1",timezone="America/Los_Angeles"} 100
 # HELP mist_site_num_devices Total number of Mist devices (APs, switches, gateways) at the site.
 # TYPE mist_site_num_devices gauge
-mist_site_num_devices{country_code="US",site_id="test-site-id-1",site_name="Test Site 1",timezone="America/Los_Angeles"} 15
+mist_site_num_devices{country_code="US",site_name="Test Site 1",timezone="America/Los_Angeles"} 15
 # HELP mist_site_num_devices_connected Number of Mist devices (APs, switches, gateways) currently online at the site.
 # TYPE mist_site_num_devices_connected gauge
-mist_site_num_devices_connected{country_code="US",site_id="test-site-id-1",site_name="Test Site 1",timezone="America/Los_Angeles"} 14
+mist_site_num_devices_connected{country_code="US",site_name="Test Site 1",timezone="America/Los_Angeles"} 14
 # HELP mist_site_num_gateway Total number of gateways configured for the site.
 # TYPE mist_site_num_gateway gauge
-mist_site_num_gateway{country_code="US",site_id="test-site-id-1",site_name="Test Site 1",timezone="America/Los_Angeles"} 1
+mist_site_num_gateway{country_code="US",site_name="Test Site 1",timezone="America/Los_Angeles"} 1
 # HELP mist_site_num_gateway_connected Number of gateways currently online at the site.
 # TYPE mist_site_num_gateway_connected gauge
-mist_site_num_gateway_connected{country_code="US",site_id="test-site-id-1",site_name="Test Site 1",timezone="America/Los_Angeles"} 1
+mist_site_num_gateway_connected{country_code="US",site_name="Test Site 1",timezone="America/Los_Angeles"} 1
 # HELP mist_site_num_switch Total number of switches configured for the site.
 # TYPE mist_site_num_switch gauge
-mist_site_num_switch{country_code="US",site_id="test-site-id-1",site_name="Test Site 1",timezone="America/Los_Angeles"} 2
+mist_site_num_switch{country_code="US",site_name="Test Site 1",timezone="America/Los_Angeles"} 2
 # HELP mist_site_num_switch_connected Number of switches currently online at the site.
 # TYPE mist_site_num_switch_connected gauge
-mist_site_num_switch_connected{country_code="US",site_id="test-site-id-1",site_name="Test Site 1",timezone="America/Los_Angeles"} 2
+mist_site_num_switch_connected{country_code="US",site_name="Test Site 1",timezone="America/Los_Angeles"} 2

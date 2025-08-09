@@ -9,7 +9,6 @@ import (
 
 func TestSiteLabelNames(t *testing.T) {
 	expected := []string{
-		"site_id",
 		"site_name",
 		"country_code",
 		"timezone",
@@ -22,14 +21,12 @@ func TestSiteLabelNames(t *testing.T) {
 
 func TestSiteLabelValues(t *testing.T) {
 	site := mistclient.Site{
-		ID:          "test-site-id-123",
 		Name:        "Test Site Name",
 		CountryCode: "GB",
 		Timezone:    "Europe/London",
 	}
 
 	expected := []string{
-		"test-site-id-123",
 		"Test Site Name",
 		"GB",
 		"Europe/London",

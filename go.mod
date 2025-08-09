@@ -3,7 +3,7 @@ module github.com/gregwight/mistexporter
 go 1.24.4
 
 require (
-	github.com/gregwight/mistclient v1.0.0
+	github.com/gregwight/mistclient v1.3.0
 	github.com/prometheus/client_golang v1.23.0
 	golang.org/x/sync v0.16.0
 	gopkg.in/yaml.v3 v3.0.1

@@ -69,6 +69,9 @@ collector:
   # less than your Prometheus scrape_timeout setting.
   collect_timeout: 15s
 
+  # How often to update device MAC to name mappings for the organization.
+  device_name_refresh_interval: 1m
+
   # How often to check for new or removed sites in the organization.
   site_refresh_interval: 1m
 
@@ -214,8 +217,6 @@ These metrics are fetched from the Mist REST API each time Prometheus scrapes th
 #### Site Metrics
 | Metric | Description | Type |
 |---|---|---|
-| `mist_site_lat` | Geographic latitude of the site. | Gauge |
-| `mist_site_lon` | Geographic longitude of the site. | Gauge |
 | `mist_site_modified_time` | The last time site was modified, as a Unix timestamp. | Gauge |
 | `mist_site_num_ap` | Total number of APs configured for the site. | Gauge |
 | `mist_site_num_ap_connected` | Number of APs currently online at the site. | Gauge |
@@ -233,54 +234,34 @@ These metrics are continuously updated in the background via a WebSocket connect
 
 #### Device (AP) Metrics
 
-All device metrics are gauges and share a common set of labels identifying the site and device (`org_id`, `site_id`, `site_name`, `device_id`, `device_name`, `device_type`, `device_model`, `device_hw_rev`). Metrics specific to a radio also include a `radio` label (e.g., `2.4GHz`, `5GHz`).
+All device metrics are gauges and share a common set of labels identifying the site and device (`site_name`,  `device_name`). Metrics specific to a radio also include a `radio` label (e.g., `2.4GHz`, `5GHz`).
 
 | Metric | Description | Type |
 |---|---|---|
-| `mist_device_acceleration_x_g` | Accelerometer reading on the X-axis in G-force. | Gauge |
-| `mist_device_acceleration_y_g` | Accelerometer reading on the Y-axis in G-force. | Gauge |
-| `mist_device_acceleration_z_g` | Accelerometer reading on the Z-axis in G-force. | Gauge |
-| `mist_device_ambient_temperature_celsius` | Ambient temperature measured by the device in Celsius. | Gauge |
-| `mist_device_attitude_degrees` | Device attitude or orientation in degrees. | Gauge |
-| `mist_device_cpu_temperature_celsius` | CPU temperature of the device in Celsius. | Gauge |
-| `mist_device_cpu_utilization_percent` | Current CPU utilization of the device. | Gauge |
-| `mist_device_created_timestamp_seconds` | The time the device was created, as a Unix timestamp. | Gauge |
-| `mist_device_humidity_percent` | Relative humidity percentage. | Gauge |
+| `mist_device_cpu_utilization_system_percent` | Current system CPU utilization of the device. | Gauge |
+| `mist_device_cpu_utilization_idle_percent` | Current idle CPU utilization of the device. | Gauge |
+| `mist_device_cpu_utilization_interrupt_percent` | Current interrupt CPU utilization of the device. | Gauge |
+| `mist_device_cpu_utilization_user_percent` | Current user CPU utilization of the device. | Gauge |
 | `mist_device_last_seen_timestamp_seconds` | The last time the device was seen, as a Unix timestamp. | Gauge |
-| `mist_device_magnetometer_x_tesla` | Magnetometer reading on the X-axis in micro-Teslas. | Gauge |
-| `mist_device_magnetometer_y_tesla` | Magnetometer reading on the Y-axis in micro-Teslas. | Gauge |
-| `mist_device_magnetometer_z_tesla` | Magnetometer reading on the Z-axis in micro-Teslas. | Gauge |
-| `mist_device_modified_timestamp_seconds` | The last time the device stats were modified, as a Unix timestamp. | Gauge |
-| `mist_device_power_budget_watts` | The power budget of the device in watts. | Gauge |
-| `mist_device_power_constrained_status` | Whether the device is power constrained (1 for true, 0 for false). | Gauge |
-| `mist_device_pressure_pascals` | Atmospheric pressure in Pascals. | Gauge |
+| `mist_device_load_average_1m` | Current 1m load average of the device. | Gauge |
+| `mist_device_load_average_5m` | Current 5m load average of the device. | Gauge |
+| `mist_device_load_average_15m` | Current 15m load average of the device. | Gauge |
+| `memory_utilization_percent` | Current memory utilization of the device. | Gauge |
 | `mist_device_receive_bits_per_second` | Bits per second received by the device. | Gauge |
-| `mist_device_status_code` | The operational status of the device (e.g., 1 for connected, 0 for disconnected). | Gauge |
 | `mist_device_transmit_bits_per_second` | Bits per second transmitted by the device. | Gauge |
 | `mist_device_uptime_seconds` | Device uptime in seconds. | Gauge |
-| `mist_device_vcore_voltage_volts` | VCore voltage of the device. | Gauge |
 | `mist_device_radio_bandwidth_mhz` | Radio channel bandwidth in MHz. | Gauge |
 | `mist_device_radio_channel` | The current radio channel. | Gauge |
 | `mist_device_radio_clients_total` | Number of clients connected to this radio. | Gauge |
-| `mist_device_radio_dynamic_chaining_enabled` | Whether dynamic chaining is enabled for the radio (1 for true, 0 for false). | Gauge |
-| `mist_device_radio_noise_floor_dbm` | The radio noise floor in dBm. | Gauge |
 | `mist_device_radio_receive_bytes_total` | Total bytes received by the radio. | Gauge |
 | `mist_device_radio_receive_packets_total` | Total packets received by the radio. | Gauge |
 | `mist_device_radio_transmit_bytes_total` | Total bytes transmitted by the radio. | Gauge |
 | `mist_device_radio_transmit_packets_total` | Total packets transmitted by the radio. | Gauge |
 | `mist_device_radio_transmit_power_dbm` | The radio's transmit power in dBm. | Gauge |
-| `mist_device_radio_utilization_all_percent` | Total radio channel utilization percentage. | Gauge |
-| `mist_device_radio_utilization_non_wifi_percent` | Radio channel utilization percentage by non-WiFi sources. | Gauge |
-| `mist_device_radio_utilization_receive_in_bss_percent` | Radio channel utilization percentage by receiving data in the same BSS. | Gauge |
-| `mist_device_radio_utilization_receive_other_bss_percent` | Radio channel utilization percentage by receiving data from other BSS. | Gauge |
-| `mist_device_radio_utilization_transmit_percent` | Radio channel utilization percentage by transmitting data. | Gauge |
-| `mist_device_radio_utilization_undecodable_wifi_percent` | Radio channel utilization percentage by undecodable WiFi sources. | Gauge |
-| `mist_device_radio_utilization_unknown_wifi_percent` | Radio channel utilization percentage by unknown WiFi sources. | Gauge |
-| `mist_device_radio_wlans_total` | Number of WLANs served by this radio. | Gauge |
 
 #### Client Metrics
 
-All client metrics are gauges and share a common set of labels identifying the site, client, and connection details (`org_id`, `site_id`, `site_name`, `client_mac`, `client_username`, `client_hostname`, `client_os`, `client_manufacture`, `client_family`, `client_model`, `device_id`, `proto`, `radio`, `ssid`).
+All client metrics are gauges and share a common set of labels identifying the site, client, and connection details (`site_name`, `device_name`, `device_mac`, `client_mac`, `client_username`, `client_hostname`, `client_os`, `client_manufacture`, `client_family`, `client_model`, `device_id`, `proto`, `radio`, `ssid`).
 
 | Metric | Description | Type |
 |---|---|---|

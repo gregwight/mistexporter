@@ -94,7 +94,7 @@ func main() {
 	eg, ctx := errgroup.WithContext(ctx)
 
 	// Create and start metrics streamer
-	m, err := metrics.New(client, orgID, siteFilter, cfg.Collector.SiteRefreshInterval, reg, logger)
+	m, err := metrics.New(client, orgID, siteFilter, cfg.Collector.SiteRefreshInterval, cfg.Collector.DeviceNameRefreshInterval, reg, logger)
 	if err != nil {
 		logger.Error("unable to initialize metrics streamer", "error", err)
 		os.Exit(1)
