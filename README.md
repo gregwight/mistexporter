@@ -69,6 +69,18 @@ collector:
   # less than your Prometheus scrape_timeout setting.
   collect_timeout: 15s
 
+  # Enable scrape-time organization metrics (REST API): mist_org_*
+  # default is true
+  enable_org_metrics: true
+
+  # Enable scrape-time site metrics (REST API): mist_site_*
+  # default is true
+  enable_site_metrics: true
+
+  # Enable streaming client metrics: mist_client_*
+  # default is true
+  enable_client_metrics: true
+
   # How often to update device MAC to name mappings for the organization.
   device_name_refresh_interval: 1m
 

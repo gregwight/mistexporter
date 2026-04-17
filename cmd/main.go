@@ -83,7 +83,7 @@ func main() {
 	reg.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
 
 	// Add the scrape-time collector
-	c, err := collector.New(client, orgID, siteFilter, logger)
+	c, err := collector.New(client, orgID, siteFilter, cfg.Collector.EnableOrgMetrics, cfg.Collector.EnableSiteMetrics, logger)
 	if err != nil {
 		logger.Error("unable to initialize scrape-time collector", "error", err)
 		os.Exit(1)
@@ -94,7 +94,7 @@ func main() {
 	eg, ctx := errgroup.WithContext(ctx)
 
 	// Create and start metrics streamer
-	m, err := metrics.New(client, orgID, siteFilter, cfg.Collector.SiteRefreshInterval, cfg.Collector.DeviceNameRefreshInterval, reg, logger)
+	m, err := metrics.New(client, orgID, siteFilter, cfg.Collector.SiteRefreshInterval, cfg.Collector.DeviceNameRefreshInterval, reg, logger, cfg.Collector.EnableClientMetrics)
 	if err != nil {
 		logger.Error("unable to initialize metrics streamer", "error", err)
 		os.Exit(1)

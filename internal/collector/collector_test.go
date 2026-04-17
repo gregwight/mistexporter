@@ -48,7 +48,7 @@ func TestNew(t *testing.T) {
 		t.Fatalf("filter.New failed: %v", err)
 	}
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	c, err := New(&mistclient.APIClient{}, "test-org", f, logger)
+	c, err := New(&mistclient.APIClient{}, "test-org", f, true, true, logger)
 	if err != nil {
 		t.Fatalf("New() returned an unexpected error: %v", err)
 	}
@@ -65,22 +65,54 @@ func TestNew(t *testing.T) {
 
 func TestCollect(t *testing.T) {
 	testCases := []struct {
-		name         string
-		filterCfg    *config.SiteFilter
-		handler      http.HandlerFunc
-		expectedFile string
-		lint         bool
+		name              string
+		filterCfg         *config.SiteFilter
+		enableOrgMetrics  bool
+		enableSiteMetrics bool
+		handler           http.HandlerFunc
+		expectedFile      string
+		lint              bool
 	}{
 		{
-			name:         "success",
-			filterCfg:    nil,
-			handler:      testAPIServerHandler(t, "testdata"),
-			expectedFile: "testdata/success.prom",
-			lint:         true,
+			name:              "success",
+			filterCfg:         nil,
+			enableOrgMetrics:  true,
+			enableSiteMetrics: true,
+			handler:           testAPIServerHandler(t, "testdata"),
+			expectedFile:      "testdata/success.prom",
+			lint:              true,
 		},
 		{
-			name:      "api error on org endpoints",
-			filterCfg: nil,
+			name:              "org metrics disabled",
+			filterCfg:         nil,
+			enableOrgMetrics:  false,
+			enableSiteMetrics: true,
+			handler:           testAPIServerHandler(t, "testdata"),
+			expectedFile:      "testdata/site_only.prom",
+			lint:              true,
+		},
+		{
+			name:              "site metrics disabled",
+			filterCfg:         nil,
+			enableOrgMetrics:  true,
+			enableSiteMetrics: false,
+			handler:           testAPIServerHandler(t, "testdata"),
+			expectedFile:      "testdata/org_only.prom",
+			lint:              true,
+		},
+		{
+			name:              "org and site metrics disabled",
+			filterCfg:         nil,
+			enableOrgMetrics:  false,
+			enableSiteMetrics: false,
+			handler:           testAPIServerHandler(t, "testdata"),
+			expectedFile:      "testdata/empty.prom",
+		},
+		{
+			name:              "api error on org endpoints",
+			filterCfg:         nil,
+			enableOrgMetrics:  true,
+			enableSiteMetrics: true,
 			handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if strings.HasPrefix(r.URL.Path, "/api/v1/orgs/") {
 					http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -91,8 +123,10 @@ func TestCollect(t *testing.T) {
 			expectedFile: "testdata/org_error.prom",
 		},
 		{
-			name:      "api error on site stats",
-			filterCfg: nil,
+			name:              "api error on site stats",
+			filterCfg:         nil,
+			enableOrgMetrics:  true,
+			enableSiteMetrics: true,
 			handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if strings.HasPrefix(r.URL.Path, "/api/v1/sites/") && strings.HasSuffix(r.URL.Path, "/stats") {
 					http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -103,10 +137,12 @@ func TestCollect(t *testing.T) {
 			expectedFile: "testdata/site_stats_error.prom",
 		},
 		{
-			name:         "with site filter",
-			filterCfg:    &config.SiteFilter{Include: []string{"Test Site 1"}},
-			handler:      testAPIServerHandler(t, "testdata"),
-			expectedFile: "testdata/filtered.prom",
+			name:              "with site filter",
+			filterCfg:         &config.SiteFilter{Include: []string{"Test Site 1"}},
+			enableOrgMetrics:  true,
+			enableSiteMetrics: true,
+			handler:           testAPIServerHandler(t, "testdata"),
+			expectedFile:      "testdata/filtered.prom",
 		},
 	}
 
@@ -128,7 +164,7 @@ func TestCollect(t *testing.T) {
 			}
 
 			logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-			collector, err := New(client, "test-org-id", siteFilter, logger)
+			collector, err := New(client, "test-org-id", siteFilter, tc.enableOrgMetrics, tc.enableSiteMetrics, logger)
 			if err != nil {
 				t.Fatalf("New() returned an unexpected error: %v", err)
 			}

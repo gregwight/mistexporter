@@ -19,6 +19,7 @@ type MistMetrics struct {
 	filter                   *filter.Filter
 	siteRefreshInterval      time.Duration
 	deviceNameRefreshnterval time.Duration
+	enableClientMetrics      bool
 	ready                    chan struct{}
 	reg                      *prometheus.Registry
 	logger                   *slog.Logger
@@ -29,13 +30,15 @@ type MistMetrics struct {
 }
 
 // New creates a new MistMetrics.
-func New(client *mistclient.APIClient, orgID string, siteFilter *filter.Filter, siteRefreshInterval time.Duration, deviceNameRefreshnterval time.Duration, reg *prometheus.Registry, logger *slog.Logger) (*MistMetrics, error) {
+func New(client *mistclient.APIClient, orgID string, siteFilter *filter.Filter, siteRefreshInterval time.Duration, deviceNameRefreshnterval time.Duration, reg *prometheus.Registry, logger *slog.Logger, enableClientMetrics bool) (*MistMetrics, error) {
 	if client == nil {
 		return nil, fmt.Errorf("client cannot be nil")
 	}
 
 	deviceMetrics = newDeviceMetrics(reg)
-	clientMetrics = newClientMetrics(reg)
+	if enableClientMetrics {
+		clientMetrics = newClientMetrics(reg)
+	}
 
 	return &MistMetrics{
 		client:                   client,
@@ -43,6 +46,7 @@ func New(client *mistclient.APIClient, orgID string, siteFilter *filter.Filter, 
 		filter:                   siteFilter,
 		siteRefreshInterval:      siteRefreshInterval,
 		deviceNameRefreshnterval: deviceNameRefreshnterval,
+		enableClientMetrics:      enableClientMetrics,
 		ready:                    make(chan struct{}),
 		reg:                      reg,
 		logger:                   logger.With(slog.String("component", "metrics")),
@@ -150,11 +154,10 @@ func (c *MistMetrics) manageSiteStreams(ctx context.Context, wg *sync.WaitGroup)
 				func(mac string) string {
 					c.mu.RLock()
 					defer c.mu.RUnlock()
-					// There's nothing we can do if there's no name so no need to
-					// check if the key exists - missing macs will get an empty label.
 					return c.deviceNames[mac]
 				},
 				c.logger,
+				c.enableClientMetrics,
 			)
 			c.sites[site.ID] = streamer
 		}
@@ -183,10 +186,11 @@ func (c *MistMetrics) Ready() <-chan struct{} {
 
 // StreamCollector coordinates the collection of metrics from a set of websocket streams.
 type StreamCollector struct {
-	client       *mistclient.APIClient
-	site         mistclient.Site
-	nameResolver func(string) string
-	logger       *slog.Logger
+	client              *mistclient.APIClient
+	site                mistclient.Site
+	nameResolver        func(string) string
+	logger              *slog.Logger
+	enableClientMetrics bool
 
 	mu      sync.RWMutex
 	running bool
@@ -202,12 +206,13 @@ func (c *StreamCollector) stop() {
 	}
 }
 
-func newStreamCollector(client *mistclient.APIClient, site mistclient.Site, nameResolver func(string) string, logger *slog.Logger) *StreamCollector {
+func newStreamCollector(client *mistclient.APIClient, site mistclient.Site, nameResolver func(string) string, logger *slog.Logger, enableClientMetrics bool) *StreamCollector {
 	return &StreamCollector{
-		client:       client,
-		site:         site,
-		nameResolver: nameResolver,
-		logger:       logger.With(slog.String("site", site.Name)),
+		client:              client,
+		site:                site,
+		nameResolver:        nameResolver,
+		logger:              logger.With(slog.String("site", site.Name)),
+		enableClientMetrics: enableClientMetrics,
 	}
 }
 
@@ -237,14 +242,6 @@ func (c *StreamCollector) run(ctx context.Context, wg *sync.WaitGroup) {
 		return
 	}
 	c.logger.Debug("site device stats stream started")
-
-	clientStats, err := c.client.StreamSiteClientStats(runCtx, c.site.ID)
-	if err != nil {
-		c.logger.Error("unable to start site client stats stream", "error", err)
-		return
-	}
-	c.logger.Debug("site client stats stream started")
-
 	// WaitGroup to ensure all subscriptions are closed before we exit.
 	// If we get a failure on one channel we cancel the context to
 	// force the other channels to disconnect. We will be restarted by
@@ -260,15 +257,23 @@ func (c *StreamCollector) run(ctx context.Context, wg *sync.WaitGroup) {
 		}
 	}()
 
-	hwg.Add(1)
-	go func() {
-		defer hwg.Done()
-		defer cancel()
-
-		for stat := range clientStats {
-			handleSiteClientStat(c.site, c.nameResolver(stat.APMac), stat)
+	if c.enableClientMetrics {
+		clientStats, err := c.client.StreamSiteClientStats(runCtx, c.site.ID)
+		if err != nil {
+			c.logger.Error("unable to start site client stats stream", "error", err)
+			// Don't return, just skip client metrics
+		} else {
+			c.logger.Debug("site client stats stream started")
+			hwg.Add(1)
+			go func() {
+				defer hwg.Done()
+				defer cancel()
+				for stat := range clientStats {
+					handleSiteClientStat(c.site, c.nameResolver(stat.APMac), stat)
+				}
+			}()
 		}
-	}()
+	}
 
 	hwg.Wait()
 }

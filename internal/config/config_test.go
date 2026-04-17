@@ -21,6 +21,9 @@ exporter:
 collector:
   collect_timeout: 25s
   site_refresh_interval: 5m
+  enable_org_metrics: false
+  enable_site_metrics: false
+  enable_client_metrics: false
   site_filter:
     include: ["Main Office-*"]
     exclude: ["Main Office-Guest"]
@@ -60,6 +63,15 @@ collector:
 	}
 	if cfg.Collector.SiteRefreshInterval != 5*time.Minute {
 		t.Errorf("expected Collector.SiteRefreshInterval to be 5m, got %v", cfg.Collector.SiteRefreshInterval)
+	}
+	if cfg.Collector.EnableOrgMetrics {
+		t.Error("expected Collector.EnableOrgMetrics to be false")
+	}
+	if cfg.Collector.EnableSiteMetrics {
+		t.Error("expected Collector.EnableSiteMetrics to be false")
+	}
+	if cfg.Collector.EnableClientMetrics {
+		t.Error("expected Collector.EnableClientMetrics to be false")
 	}
 	if cfg.Collector.SiteFilter == nil {
 		t.Fatal("expected SiteFilter to be loaded, but it was nil")
@@ -135,6 +147,15 @@ mist_api:
 	}
 	if cfg.Collector.SiteRefreshInterval != defaultSiteRefreshInterval {
 		t.Errorf("expected default Collector.SiteRefreshInterval to be %v, got %v", defaultSiteRefreshInterval, cfg.Collector.SiteRefreshInterval)
+	}
+	if !cfg.Collector.EnableOrgMetrics {
+		t.Error("expected default Collector.EnableOrgMetrics to be true")
+	}
+	if !cfg.Collector.EnableSiteMetrics {
+		t.Error("expected default Collector.EnableSiteMetrics to be true")
+	}
+	if !cfg.Collector.EnableClientMetrics {
+		t.Error("expected default Collector.EnableClientMetrics to be true")
 	}
 }
 
