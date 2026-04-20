@@ -1,0 +1,9 @@
+# HELP mist_org_alarms Total number of unresolved alarms in the organization.
+# TYPE mist_org_alarms gauge
+mist_org_alarms{alarm_type="AP_DISCONNECTED"} 1
+mist_org_alarms{alarm_type="GATEWAY_DISCONNECTED"} 0
+mist_org_alarms{alarm_type="SWITCH_DISCONNECTED"} 2
+# HELP mist_org_tickets Total number of tickets in the organization by status.
+# TYPE mist_org_tickets gauge
+mist_org_tickets{ticket_status="closed"} 10
+mist_org_tickets{ticket_status="open"} 5
