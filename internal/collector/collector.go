@@ -12,25 +12,29 @@ import (
 
 // MistCollector implements the prometheus.Collector interface.
 type MistCollector struct {
-	client *mistclient.APIClient
-	orgID  string
-	filter *filter.Filter
-	wg     *sync.WaitGroup
-	logger *slog.Logger
+	client            *mistclient.APIClient
+	orgID             string
+	filter            *filter.Filter
+	enableOrgMetrics  bool
+	enableSiteMetrics bool
+	wg                *sync.WaitGroup
+	logger            *slog.Logger
 }
 
 // New creates a new MistCollector.
-func New(client *mistclient.APIClient, orgID string, siteFilter *filter.Filter, logger *slog.Logger) (*MistCollector, error) {
+func New(client *mistclient.APIClient, orgID string, siteFilter *filter.Filter, enableOrgMetrics bool, enableSiteMetrics bool, logger *slog.Logger) (*MistCollector, error) {
 	if client == nil {
 		return nil, fmt.Errorf("client cannot be nil")
 	}
 
 	return &MistCollector{
-		client: client,
-		orgID:  orgID,
-		filter: siteFilter,
-		wg:     &sync.WaitGroup{},
-		logger: logger.With(slog.String("component", "collector")),
+		client:            client,
+		orgID:             orgID,
+		filter:            siteFilter,
+		enableOrgMetrics:  enableOrgMetrics,
+		enableSiteMetrics: enableSiteMetrics,
+		wg:                &sync.WaitGroup{},
+		logger:            logger.With(slog.String("component", "collector")),
 	}, nil
 }
 
@@ -41,17 +45,21 @@ func (c *MistCollector) Describe(ch chan<- *prometheus.Desc) {
 
 // Collect implements the prometheus.Collector interface.
 func (c *MistCollector) Collect(ch chan<- prometheus.Metric) {
-	// Get alarms for the organization
-	c.wg.Add(1)
-	go c.collectOrgAlarms(ch)
+	if c.enableOrgMetrics {
+		// Get alarms for the organization
+		c.wg.Add(1)
+		go c.collectOrgAlarms(ch)
 
-	// Get tickets for the organization
-	c.wg.Add(1)
-	go c.collectOrgTickets(ch)
+		// Get tickets for the organization
+		c.wg.Add(1)
+		go c.collectOrgTickets(ch)
+	}
 
-	// Get sites for the organization
-	c.wg.Add(1)
-	go c.collectSiteStats(ch)
+	if c.enableSiteMetrics {
+		// Get sites for the organization
+		c.wg.Add(1)
+		go c.collectSiteStats(ch)
+	}
 
 	c.wg.Wait()
 }

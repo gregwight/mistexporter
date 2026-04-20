@@ -37,6 +37,9 @@ type Collector struct {
 	CollectTimeout            time.Duration `yaml:"collect_timeout,omitempty"`
 	DeviceNameRefreshInterval time.Duration `yaml:"device_name_refresh_interval,omitempty"`
 	SiteRefreshInterval       time.Duration `yaml:"site_refresh_interval,omitempty"`
+	EnableOrgMetrics          bool          `yaml:"enable_org_metrics,omitempty"`
+	EnableSiteMetrics         bool          `yaml:"enable_site_metrics,omitempty"`
+	EnableClientMetrics       bool          `yaml:"enable_client_metrics,omitempty"`
 	SiteFilter                *SiteFilter   `yaml:"site_filter,omitempty"`
 }
 
@@ -78,6 +81,9 @@ func newDefaultConfig() *Config {
 			CollectTimeout:            defaultCollectTimeout,
 			DeviceNameRefreshInterval: defaultDeviceNameRefreshInterval,
 			SiteRefreshInterval:       defaultSiteRefreshInterval,
+			EnableOrgMetrics:          true,
+			EnableSiteMetrics:         true,
+			EnableClientMetrics:       true,
 		},
 	}
 }
