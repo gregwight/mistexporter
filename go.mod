@@ -1,6 +1,6 @@
 module github.com/gregwight/mistexporter
 
-go 1.24.4
+go 1.25.0
 
 require (
 	github.com/gregwight/mistclient v1.3.1
@@ -18,7 +18,7 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.65.0 // indirect
 	github.com/prometheus/procfs v0.17.0 // indirect
-	golang.org/x/net v0.43.0 // indirect
-	golang.org/x/sys v0.35.0 // indirect
+	golang.org/x/net v0.55.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
 	google.golang.org/protobuf v1.36.7 // indirect
 )
